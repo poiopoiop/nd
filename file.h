@@ -1,6 +1,6 @@
 /**
  * @file file.h
- * @author li_zhe(li_zhe@baidu.com)
+ * @author li_zhe
  * @date 2012/12/02 18:48:59
  * @brief 
  **/

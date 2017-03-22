@@ -2,15 +2,15 @@
 CC=g++
 CFLAGS=-g -Wall \
 	   -I../libevent/output/include/ \
-	   -I../baidu_libs/public/configure/output/include/ \
-	   -I../baidu_libs/public/mcpack/output/include/ \
-	   -I../baidu_libs/public/nshead/output/include/ \
-	   -I../baidu_libs/lib2-64/bsl/include/ \
-	   -I../baidu_libs/lib2-64/ullib/include/ \
+	   -I../bd_libs/public/configure/output/include/ \
+	   -I../bd_libs/public/mcpack/output/include/ \
+	   -I../bd_libs/public/nshead/output/include/ \
+	   -I../bd_libs/lib2-64/bsl/include/ \
+	   -I../bd_libs/lib2-64/ullib/include/ \
 	   -L../libevent/output/lib/ \
-	   -L../baidu_libs/public/configure/output/lib/ \
-	   -L../baidu_libs/public/mcpack/output/lib/ \
-	   -L../baidu_libs/public/nshead/output/ \
+	   -L../bd_libs/public/configure/output/lib/ \
+	   -L../bd_libs/public/mcpack/output/lib/ \
+	   -L../bd_libs/public/nshead/output/ \
 	   $(LEBOOK_CFLAGS)
 
 EXAMPLE_BINARIES=ndsim
