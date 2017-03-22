@@ -1,10 +1,12 @@
 
-CC=gcc
+CC=g++
 CFLAGS=-g -Wall \
 	   -I../libevent/output/include/ \
 	   -I../baidu_libs/public/configure/output/include/ \
 	   -I../baidu_libs/public/mcpack/output/include/ \
 	   -I../baidu_libs/public/nshead/output/include/ \
+	   -I../baidu_libs/lib2-64/bsl/include/ \
+	   -I../baidu_libs/lib2-64/ullib/include/ \
 	   -L../libevent/output/lib/ \
 	   -L../baidu_libs/public/configure/output/lib/ \
 	   -L../baidu_libs/public/mcpack/output/lib/ \
@@ -17,10 +19,10 @@ all: examples
 
 examples: $(EXAMPLE_BINARIES)
 
-ndsim: main.o
-	$(CC) $(CFLAGS) main.o -o ndsim -levent
+ndsim: main.o file.o
+	$(CC) $(CFLAGS) main.o file.o -o ndsim -levent -lpthread
 
-.c.o:
+.cpp.o:
 	$(CC) $(CFLAGS) -c $<
 
 clean:
