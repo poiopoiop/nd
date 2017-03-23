@@ -16,6 +16,7 @@
 
 #include <Configure.h>
 
+#include "ndsim_define.h"
 #include "server.h"
 #include "log.h"
 
@@ -24,7 +25,6 @@ static int port;
 
 //for multiple thread
 int thread_num;
-#define THREAD_NUM_DEFAULT 4
 
 int read_conf() {
     try {
@@ -33,7 +33,7 @@ int read_conf() {
         if (thread_num <= 0) {
             thread_num = THREAD_NUM_DEFAULT;
         }
-        log_notice("thread_num conf load done: %u", thread_num);
+        log_trace("thread_num conf load done, thread_num: %u", thread_num);
     } catch (comcfg::ConfigException &e) {
         log_fatal("Read conf error during server init, errmsg: %s", e.what());
         return -1;
@@ -47,13 +47,13 @@ int server_init() {
         return -1;
     }
 
-
-
+    server_run();
     return 0;
 }
 
-void generic_handler(struct evhttp_request *req, void *arg)
+void http_handler(struct evhttp_request *req, void *arg)
 {
+    int ret_errno = ERRNO_SUCCESS;
     struct evbuffer *buf = evbuffer_new();
     if(!buf)
     {
@@ -64,6 +64,8 @@ void generic_handler(struct evhttp_request *req, void *arg)
     evbuffer_add_printf(buf, "Server Responsed. Requested: %s\n", evhttp_request_get_uri(req));
     evhttp_send_reply(req, HTTP_OK, "OK", buf);
     evbuffer_free(buf);
+
+    log_notice("errno: %u", ret_errno);
 }
 
 int server_run() {
@@ -81,9 +83,9 @@ int server_run() {
         return -1;
     }
 
-    evhttp_set_gencb(http_server, generic_handler, NULL);
+    evhttp_set_gencb(http_server, http_handler, NULL);
 
-    printf("http server start OK! \n");
+    log_trace("http server start OK!");
 
     event_base_dispatch(base);
 

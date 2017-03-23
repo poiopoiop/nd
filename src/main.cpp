@@ -62,13 +62,13 @@ int main(int argc, char **argv) {
         fprintf(stderr, "log init failed\n");
         return 1;
     }
-    log_notice("log init done");
+    log_trace("log init done");
 
     ENSURE(event_init(), "event init failed");
-    log_notice("event init done");
+    log_trace("event init done");
 
     ENSURE(server_init(), "event init failed");
-    log_notice("server init done");
+    log_trace("server init done");
  
 
     printf("%s\n%s\n", conf_dir.c_str(), conf_name.c_str());

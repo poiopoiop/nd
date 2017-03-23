@@ -22,7 +22,7 @@ int server_init();
 
 int server_run();
 
-void generic_handler(struct evhttp_request *req, void *arg);
+void http_handler(struct evhttp_request *req, void *arg);
 
 
 
