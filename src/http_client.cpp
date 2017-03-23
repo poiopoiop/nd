@@ -30,22 +30,17 @@ void http_request_post_cb(struct evhttp_request *req, void *arg)
         {
             struct evbuffer* buf = evhttp_request_get_input_buffer(req);
             size_t len = evbuffer_get_length(buf);
-            //MITLog_DetPuts(MITLOG_LEVEL_COMMON, "print the head info:");
             print_request_head_info(req->output_headers);
 
-            //MITLog_DetPrintf(MITLOG_LEVEL_COMMON,"len:%zu  body size:%zu", len, req->body_size);
             char *tmp = (char *)malloc(len+1);
             memcpy(tmp, evbuffer_pullup(buf, -1), len);
             tmp[len] = '\0';
-            //MITLog_DetPuts(MITLOG_LEVEL_COMMON, "print the body:");
-            //MITLog_DetPrintf(MITLOG_LEVEL_COMMON,"HTML BODY:%s", tmp);
             free(tmp);
 
             //event_base_loopexit(http_req_post->base, 0);
             break;
         }
         case HTTP_MOVEPERM:
-            //MITLog_DetPrintf(MITLOG_LEVEL_ERROR, "%s", "the uri moved permanently");
             break;
         case HTTP_MOVETEMP:
         {
@@ -73,22 +68,17 @@ void http_request_get_cb(struct evhttp_request *req, void *arg)
         {
             struct evbuffer* buf = evhttp_request_get_input_buffer(req);
             size_t len = evbuffer_get_length(buf);
-            //MITLog_DetPuts(MITLOG_LEVEL_COMMON, "print the head info:");
             print_request_head_info(req->output_headers);
 
-            //MITLog_DetPrintf(MITLOG_LEVEL_COMMON,"len:%zu  body size:%zu", len, req->body_size);
             char *tmp = (char *)malloc(len+1);
             memcpy(tmp, evbuffer_pullup(buf, -1), len);
             tmp[len] = '\0';
-            //MITLog_DetPuts(MITLOG_LEVEL_COMMON, "print the body:");
-            //MITLog_DetPrintf(MITLOG_LEVEL_COMMON,"HTML BODY:%s", tmp);
             free(tmp);
 
             //event_base_loopexit(http_req_get->base, 0);
             break;
         }
         case HTTP_MOVEPERM:
-            //MITLog_DetPrintf(MITLOG_LEVEL_ERROR, "%s", "the uri moved permanently");
             break;
         case HTTP_MOVETEMP:
         {
