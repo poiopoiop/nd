@@ -79,12 +79,48 @@ int server_run() {
 
 void http_handler(struct evhttp_request *req, void *arg)
 {
+
+    //parse get parameters 
+    struct evkeyvalq * get_params;
+    get_params = evhttp_request_get_input_headers(req);
+    evhttp_parse_query(evhttp_request_get_uri(req), get_params);
+    const char *cmdno = evhttp_find_header(get_params, "cmdno");
+
+    if (cmdno == 0 || *cmdno == '\0') {
+        log_warning("cmdno not found");
+        log_notice("errno: %d", ERRNO_ILLEGAL_CMDNO);
+        return;
+    }
+
+    switch(atoi(cmdno)) {
+        case CMDNO_SEARCH:
+            break;
+        case CMDNO_SAMPLE_AND_SIGN:
+            break;
+        case CMDNO_GET_DOCS_BY_SIGN:
+            break;
+        case CMDNO_GET_SIGNS_BY_DOC:
+            break;
+        case CMDNO_GET_DOCS_BY_DOC:
+            break;
+        case CMDNO_WORDSEG:
+            break;
+        case CMDNO_CLASS:
+            break;
+        default:
+            log_warning("cmdno not support: %u", atoi(cmdno));
+            log_notice("errno: %d", ERRNO_ILLEGAL_CMDNO);
+            return;
+    }
+
+
+
     //input_buffer, get POST info
     evbuffer * input_buffer = evhttp_request_get_input_buffer(req);
     int buffer_data_len = evbuffer_get_length(input_buffer);
     if (buffer_data_len > MAX_POST_DATA_SIZE) {
         log_warning("post data too large: %u > %u", buffer_data_len, MAX_POST_DATA_SIZE);
-        log_notice("errno: %u", ERRNO_POST_DATA_TOO_LARGE);
+        log_notice("errno: %d", ERRNO_POST_DATA_TOO_LARGE);
         return;
     }
 
@@ -97,7 +133,7 @@ void http_handler(struct evhttp_request *req, void *arg)
     if(!response_buffer)
     {
         log_fatal("failed to create response buffer \n");
-        log_notice("errno: %u", ERRNO_MEM_PROBLEM);
+        log_notice("errno: %d", ERRNO_MEM_PROBLEM);
         return;
     }
 
@@ -110,7 +146,8 @@ void http_handler(struct evhttp_request *req, void *arg)
     //free response buffer
     evbuffer_free(response_buffer);
 
-    log_notice("errno: %u, post_data_size: %u", ERRNO_SUCCESS, buffer_data_len);
+    log_notice("errno: %d, post_data_size: %u, cmdno: %s", ERRNO_SUCCESS, buffer_data_len, cmdno);
+
     return;
 }
 
