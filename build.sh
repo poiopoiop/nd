@@ -1,4 +1,7 @@
 #!/bin/sh
+echo "make clean..."
+rm ./src/*.o server
+echo "make..."
 g++ -g -Wall -I ../bd_libs/public/configure/output/include/ -I ../bd_libs/lib2-64/bsl/include/ -I ../bd_libs/lib2-64/ullib/include/ -I ../libevent/output/include/ -c ./src/event.cpp -o ./src/event.o
 g++ -g -Wall -I ../bd_libs/public/configure/output/include/ -I ../bd_libs/lib2-64/bsl/include/ -I ../bd_libs/lib2-64/ullib/include/ -c ./src/log.cpp -o ./src/log.o
 g++ -g -Wall -I ../bd_libs/public/configure/output/include/ -I ../bd_libs/lib2-64/bsl/include/ -I ../bd_libs/lib2-64/ullib/include/ -c ./src/main.cpp -o ./src/main.o
@@ -8,6 +11,7 @@ g++ -g -Wall -I ../bd_libs/public/configure/output/include/ -I ../bd_libs/lib2-6
 
 g++ -g -Wall \
     -I ../bd_libs/public/configure/output/include/ \
+    -I ../bd_libs/public/spreg/output/include/ \
     -I ../bd_libs/lib2-64/bsl/include/ \
     -I ../bd_libs/lib2-64/ullib/include/ \
     -I ../libevent/output/include/ \
@@ -29,4 +33,6 @@ g++ -g -Wall \
     ../bd_libs/lib2-64/bsl/lib/libbsl_var_implement.a \
     ../bd_libs/lib2-64/bsl/lib/libbsl_var_utils.a \
     ../bd_libs/lib2-64/ullib/lib/libullib.a \
+    ../bd_libs/public/configure/output/lib/libconfig.a \
+    ../bd_libs/public/spreg/output/lib/libspreg.a \
     -lpthread -rdynamic -Xlinker "-)" -o server
