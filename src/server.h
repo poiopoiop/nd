@@ -24,9 +24,9 @@ int server_run();
 
 void http_handler(struct evhttp_request *req, void *arg);
 
+void failure_process(struct evhttp_request *req, struct evbuffer *response_buffer, int ret_errno, const char* ret_errmsg, int ret_status, int cmdno);
 
-
-
+int get_post_data(struct evhttp_request *req, char* post_data);
 
 #endif  //__SERVER_H_
 

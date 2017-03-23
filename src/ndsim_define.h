@@ -13,8 +13,10 @@
 #define ERRNO_SUCCESS               0
 #define ERRNO_SYSTEM_ERROR          -1
 #define ERRNO_MEM_PROBLEM           -2
-#define ERRNO_POST_DATA_TOO_LARGE   -10
-#define ERRNO_ILLEGAL_CMDNO         -11
+#define ERRNO_ILLEGAL_CMDNO         -10
+#define ERRNO_NOT_SUPPORT_CMDNO     -11
+#define ERRNO_POST_DATA_TOO_LARGE   -12
+#define ERRNO_POST_DATA_EMPTY       -13
 
 
 //for multi-thread, default thread num
@@ -27,6 +29,7 @@
 
 
 //for command/interface
+#define CMDNO_UNKNOWN               0
 #define CMDNO_SEARCH                1
 #define CMDNO_SAMPLE_AND_SIGN       2
 #define CMDNO_GET_DOCS_BY_SIGN      3

@@ -77,76 +77,125 @@ int server_run() {
     return 0;
 }
 
+void failure_process(struct evhttp_request *req, struct evbuffer *response_buffer, int ret_errno, const char* ret_errmsg, int ret_status, int cmdno=CMDNO_UNKNOWN) {
+    //write response message
+    evbuffer_add_printf(response_buffer, "Server process failed, errno: %d, errmsg:%s\n", ret_errno, ret_errmsg);
+
+    //send response
+    evhttp_send_reply(req, ret_status, ret_errmsg, response_buffer);
+
+    //log
+    log_warning(ret_errmsg);
+    log_notice("errno: %d, cmdno: %d", ret_errno, cmdno);
+
+    return;
+}
+
+int get_post_data(struct evhttp_request *req, char* post_data) {
+    //input_buffer, get POST info
+    evbuffer * input_buffer = evhttp_request_get_input_buffer(req);
+
+    //length of post data
+    int len = evbuffer_get_length(input_buffer);
+    if (len <= 0) {
+        log_warning("post data empty");
+        log_notice("errno: %d", ERRNO_POST_DATA_EMPTY);
+        return ERRNO_POST_DATA_EMPTY;
+    }
+    else if (len > MAX_POST_DATA_SIZE) {
+        log_warning("post data too large: %u > %u", len, MAX_POST_DATA_SIZE);
+        log_notice("errno: %d", ERRNO_POST_DATA_TOO_LARGE);
+        return ERRNO_POST_DATA_TOO_LARGE;
+    }
+
+    memcpy(post_data, evbuffer_pullup(input_buffer, -1), len);
+
+    return len;
+}
+
 void http_handler(struct evhttp_request *req, void *arg)
 {
+    int post_len    = 0;
+    int command_no  = 0;
+
+    sleep(1);
+    //memory init
+    //build response_buffer
+    struct evbuffer *response_buffer = evbuffer_new();
+    if(!response_buffer) {
+        log_fatal("failed to create response buffer \n");
+        log_notice("errno: %d", ERRNO_MEM_PROBLEM);
+        return;
+    }
+    //post_data init, ready to parse and store post data
+    char *post_data = (char *) malloc(MAX_POST_DATA_SIZE + 1);
+    if (!post_data) {
+        //free response buffer
+        evbuffer_free(response_buffer);
+        log_fatal("failed to create post_data buffer \n");
+        log_notice("errno: %d", ERRNO_MEM_PROBLEM);
+        return;
+    }
+    memset(post_data, '\0', MAX_POST_DATA_SIZE + 1);
 
     //parse get parameters 
     struct evkeyvalq * get_params;
     get_params = evhttp_request_get_input_headers(req);
     evhttp_parse_query(evhttp_request_get_uri(req), get_params);
+    //get cmdno from request
     const char *cmdno = evhttp_find_header(get_params, "cmdno");
-
     if (cmdno == 0 || *cmdno == '\0') {
-        log_warning("cmdno not found");
-        log_notice("errno: %d", ERRNO_ILLEGAL_CMDNO);
-        return;
+        command_no = 0;
+    }
+    else {
+        command_no = atoi(cmdno);
     }
 
-    switch(atoi(cmdno)) {
+    //command distribution
+    switch(command_no) {
         case CMDNO_SEARCH:
+            post_len = get_post_data(req, post_data);
+            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_SAMPLE_AND_SIGN:
+            post_len = get_post_data(req, post_data);
+            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_GET_DOCS_BY_SIGN:
+            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_GET_SIGNS_BY_DOC:
+            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_GET_DOCS_BY_DOC:
+            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_WORDSEG:
+            post_len = get_post_data(req, post_data);
+            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_CLASS:
+            post_len = get_post_data(req, post_data);
+            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, "cmdno not support", HTTP_NOTFOUND);
             break;
         default:
-            log_warning("cmdno not support: %u", atoi(cmdno));
-            log_notice("errno: %d", ERRNO_ILLEGAL_CMDNO);
-            return;
+            failure_process(req, response_buffer, ERRNO_ILLEGAL_CMDNO, "illegal cmdno", HTTP_BADREQUEST);
+            break;
     }
 
-
-
-    //input_buffer, get POST info
-    evbuffer * input_buffer = evhttp_request_get_input_buffer(req);
-    int buffer_data_len = evbuffer_get_length(input_buffer);
-    if (buffer_data_len > MAX_POST_DATA_SIZE) {
-        log_warning("post data too large: %u > %u", buffer_data_len, MAX_POST_DATA_SIZE);
-        log_notice("errno: %d", ERRNO_POST_DATA_TOO_LARGE);
-        return;
-    }
-
-    char *post_data = (char *) malloc(buffer_data_len + 1);
-    memset(post_data, '\0', buffer_data_len + 1);
-    memcpy(post_data, evbuffer_pullup(input_buffer, -1), buffer_data_len);
-
-    //build response_buffer
-    struct evbuffer *response_buffer = evbuffer_new();
-    if(!response_buffer)
-    {
-        log_fatal("failed to create response buffer \n");
-        log_notice("errno: %d", ERRNO_MEM_PROBLEM);
-        return;
-    }
-
+    /*
     //write response message
     evbuffer_add_printf(response_buffer, "Server Responsed. Requested: %s\n", evhttp_request_get_uri(req));
 
     //send response
     evhttp_send_reply(req, HTTP_OK, "OK", response_buffer);
+    */
 
     //free response buffer
     evbuffer_free(response_buffer);
 
-    log_notice("errno: %d, post_data_size: %u, cmdno: %s", ERRNO_SUCCESS, buffer_data_len, cmdno);
+    //free post_data
+    free(post_data);
 
     return;
 }
