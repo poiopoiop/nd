@@ -7,6 +7,12 @@ g++ -g -Wall \
     -I ../bd_libs/lib2-64/bsl/include/ \
     -I ../bd_libs/lib2-64/ullib/include/ \
     -I ../libevent/output/include/ \
+    -c ./src/http_client.cpp -o ./src/http_client.o
+g++ -g -Wall \
+    -I ../bd_libs/public/configure/output/include/ \
+    -I ../bd_libs/lib2-64/bsl/include/ \
+    -I ../bd_libs/lib2-64/ullib/include/ \
+    -I ../libevent/output/include/ \
     -c ./src/event.cpp -o ./src/event.o
 g++ -g -Wall \
     -I ../bd_libs/public/configure/output/include/ \
@@ -31,6 +37,12 @@ g++ -g -Wall \
     -I ../bd_libs/lib2-64/bsl/include/ \
     -I ../bd_libs/lib2-64/ullib/include/ \
     -I ../libevent/output/include/ \
+    -c ./src/function.cpp -o ./src/function.o 
+g++ -g -Wall \
+    -I ../bd_libs/public/configure/output/include/ \
+    -I ../bd_libs/lib2-64/bsl/include/ \
+    -I ../bd_libs/lib2-64/ullib/include/ \
+    -I ../libevent/output/include/ \
     -c ./src/main.cpp -o ./src/main.o 
 #g++ -g -Wall \
 #    -I ../bd_libs/public/configure/output/include/ \
@@ -46,9 +58,11 @@ g++ -g -Wall \
     -I ../libevent/output/include/ \
     ./src/event.o \
     ./src/server.o \
-    ./src/log.o\
-    ./src/file.o\
-    ./src/main.o\
+    ./src/log.o \
+    ./src/http_client.o \
+    ./src/function.o \
+    ./src/file.o \
+    ./src/main.o \
     -Xlinker "-(" \
     ../libevent/output/lib/libevent.a \
     ../bd_libs/lib2-64/bsl/lib/libbsl.a \

@@ -19,7 +19,7 @@
 int read_conf();
 
 int server_init();
-
+void server_destroy();
 int server_run();
 
 void http_handler(struct evhttp_request *req, void *arg);
