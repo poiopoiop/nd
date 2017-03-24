@@ -10,6 +10,7 @@
 #define  __FUNCTION_H_
 
 int search(struct evhttp_request *req, struct evbuffer *response_buffer, int post_len, const char *post_data);
+int search2(struct evhttp_request *req, struct evbuffer *response_buffer, int post_len, const char *post_data);
 
 
 

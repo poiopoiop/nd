@@ -44,8 +44,8 @@ void http_request_get_cb(struct evhttp_request *req, void *arg);
 int start_url_request(struct http_request_get *http_req, int req_get_flag);  
 
 //tools function
-static inline void print_request_head_info(struct evkeyvalq *header);
-static inline void print_uri_parts_info(const struct evhttp_uri * http_uri);
+void print_request_head_info(struct evkeyvalq *header);
+void print_uri_parts_info(const struct evhttp_uri * http_uri);
 
 //new/free function 
 void *http_request_new(struct event_base* base, const char *url, int req_get_flag,

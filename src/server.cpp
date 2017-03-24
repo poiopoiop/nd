@@ -12,8 +12,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "event.h"
-//#include "evhttp.h"
+#include <event2/event.h>
+#include <event2/buffer.h>
+#include <event2/http.h>
+#include <event2/http_struct.h>
+#include <event2/keyvalq_struct.h>
+
 
 #include <Configure.h>
 
@@ -84,6 +88,10 @@ int server_run() {
         return -1;
     }
 
+    //add timeout, timeout in sec
+    //of no use, would not halt request, but only have empty reply after timeout
+    //evhttp_set_timeout(http_server, 3);
+
     evhttp_set_gencb(http_server, http_handler, NULL);
 
     log_trace("http server start OK!");
@@ -130,8 +138,13 @@ int get_post_data(struct evhttp_request *req, char* post_data) {
     return len;
 }
 
-void http_handler(struct evhttp_request *req, void *arg)
-{
+void connection_handler(struct evhttp_connection *evcon, void *arg) {
+    log_debug("in connection_handle");
+    return;
+}
+
+void http_handler(struct evhttp_request *req, void *arg) {
+    log_debug("in http_handler");
     struct timeval start_time, end_time;
     event_gettime(&start_time);
 
@@ -151,6 +164,10 @@ void http_handler(struct evhttp_request *req, void *arg)
     //seems do not necessary to memset
     //memset(post_data, '\0', MAX_POST_DATA_SIZE + 1);
 
+    //set timeout
+    evhttp_connection_set_timeout(req->evcon, 3);
+    evhttp_connection_set_closecb(req->evcon, connection_handler, NULL);
+
     //parse get parameters 
     struct evkeyvalq * get_params;
     get_params = evhttp_request_get_input_headers(req);
@@ -168,14 +185,11 @@ void http_handler(struct evhttp_request *req, void *arg)
     switch(command_no) {
         case CMDNO_SEARCH:
             post_len = get_post_data(req, post_data);
-            ret_errno = ERRNO_ILLEGAL_CMDNO;
-            search(req, response_buffer, post_len, (const char*)post_data);
+            ret_errno = search(req, response_buffer, post_len, (const char*)post_data);
             break;
         case CMDNO_SAMPLE_AND_SIGN:
             post_len = get_post_data(req, post_data);
-            ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
-                    "cmdno not support", HTTP_NOTFOUND);
+            ret_errno = search2(req, response_buffer, post_len, (const char*)post_data);
             break;
         case CMDNO_GET_DOCS_BY_SIGN:
             ret_errno = ERRNO_ILLEGAL_CMDNO;
@@ -223,7 +237,7 @@ void http_handler(struct evhttp_request *req, void *arg)
 
     event_gettime(&end_time);
     float cost = ((end_time.tv_sec-start_time.tv_sec)*1000+(end_time.tv_usec-start_time.tv_usec)/1000.0);
-    log_notice("errno: %d, cmdno: %d, cost: %.3f, len: %u", ret_errno, command_no, cost, post_len);
+    log_notice("errno: %d, cmdno: %d, cost: %.3f, len: %d", ret_errno, command_no, cost, post_len);
 
     return;
 }
