@@ -17,8 +17,9 @@
 #include "ndsim_define.h"
 #include "log.h"
 
-int search(struct evhttp_request *req, struct evbuffer *response_buffer, int post_len, const char *post_data) {
-    struct event_base* base = event_base_new();  
+//int search(struct evhttp_request *req, struct evbuffer *response_buffer, int post_len, const char *post_data) {
+int search(req_t * r) {
+    struct event_base* base = r->base;
 
     /*
     struct http_request_post *http_req_post = 
@@ -57,12 +58,12 @@ int search(struct evhttp_request *req, struct evbuffer *response_buffer, int pos
     event_base_free(base);  
 
     //write response message
-    evbuffer_add_printf(response_buffer, "Server process done, function: search, errno: %d, errmsg:%s\n", ERRNO_SUCCESS, "success");
+    evbuffer_add_printf(r->writebuf, "Server process done, function: search, errno: %d, errmsg:%s\n", ERRNO_SUCCESS, "success");
 
     //send response
-    evhttp_send_reply(req, HTTP_OK, "success", response_buffer);
+    evhttp_send_reply(r->evhttp_req, HTTP_OK, "success", r->writebuf);
 
-    log_debug("evhttp_send_reply, %d, %d", req, response_buffer);
+    log_debug("evhttp_send_reply, %d, %d", r->evhttp_req, r->writebuf);
 
     return 0;
 }

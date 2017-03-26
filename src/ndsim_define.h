@@ -9,6 +9,12 @@
 #ifndef  __NDSIM_DEFINE_H_
 #define  __NDSIM_DEFINE_H_
 
+#include "event.h"
+
+#include "event2/event.h"
+#include "event2/buffer.h"
+#include "event2/http.h"
+
 //errno
 #define ERRNO_SUCCESS               0
 #define ERRNO_SYSTEM_ERROR          -1
@@ -38,5 +44,27 @@
 #define CMDNO_GET_DOCS_BY_DOC       5
 #define CMDNO_WORDSEG               6
 #define CMDNO_CLASS                 7
+
+typedef struct _req_t {
+
+    unsigned int log_id; //mirror from conn
+    char *readbuf;
+    int readbuf_len;
+
+    //char *writebuf;
+    struct evbuffer * writebuf;
+
+
+    event_timer_t *timeout_event;
+    bool timeout;
+    unsigned long req_id;
+    struct timeval start_time;
+    int err_no;
+    char err_msg[MAX_ERR_MSG_LEN];
+
+    struct evhttp_request *evhttp_req;
+    struct event_base * base;
+} req_t;
+
 
 #endif  //__NDSIM_DEFINE_H_

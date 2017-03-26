@@ -153,18 +153,20 @@ void timeout_handler(void* arg) {
 
 void http_handler(struct evhttp_request *evhttp_req, void *arg) {
     log_debug("in http_handler");
-    struct event_base * base = (struct event_base *)arg;
     struct timeval start_time, end_time;
     event_gettime(&start_time);
 
     req_t *r = (req_t*)malloc(sizeof(req_t));
+    r->readbuf = post_data;
+    struct event_base* rbase = event_base_new();  
+    r->base = rbase;
     r->evhttp_req = evhttp_req;
-    r->timeout_event = event_timer_new(timeout_handler, 1 * 10000, false, r, base);
+    r->timeout_event = event_timer_new(timeout_handler, 1 * 10000, false, r, r->base);
     //r->timeout_event = event_timer_new(req_timeout, timeout.tv_sec * 1000000 + timeout.tv_usec, false, r);
 
 
+    r->readbuf_len  = 0;
     int ret_errno   = 0;
-    int post_len    = 0;
     int command_no  = 0;
 
     //memory init
@@ -174,6 +176,7 @@ void http_handler(struct evhttp_request *evhttp_req, void *arg) {
         log_fatal("failed to create response buffer \n");
         exit(-1);
     }
+    r->writebuf = response_buffer;
 
     //post_data init, ready to parse and store post data
     //seems do not necessary to memset
@@ -201,12 +204,12 @@ void http_handler(struct evhttp_request *evhttp_req, void *arg) {
     //command distribution
     switch(command_no) {
         case CMDNO_SEARCH:
-            post_len = get_post_data(evhttp_req, post_data);
-            ret_errno = search(evhttp_req, response_buffer, post_len, (const char*)post_data);
+            r->readbuf_len = get_post_data(evhttp_req, post_data);
+            ret_errno = search(r);
             break;
         case CMDNO_SAMPLE_AND_SIGN:
-            post_len = get_post_data(evhttp_req, post_data);
-            ret_errno = search2(evhttp_req, response_buffer, post_len, (const char*)post_data);
+            r->readbuf_len = get_post_data(evhttp_req, post_data);
+            ret_errno = search2(evhttp_req, response_buffer, r->readbuf_len, (const char*)post_data);
             break;
         case CMDNO_GET_DOCS_BY_SIGN:
             ret_errno = ERRNO_ILLEGAL_CMDNO;
@@ -224,13 +227,13 @@ void http_handler(struct evhttp_request *evhttp_req, void *arg) {
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_WORDSEG:
-            post_len = get_post_data(evhttp_req, post_data);
+            r->readbuf_len = get_post_data(evhttp_req, post_data);
             ret_errno = ERRNO_ILLEGAL_CMDNO;
             failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_CLASS:
-            post_len = get_post_data(evhttp_req, post_data);
+            r->readbuf_len = get_post_data(evhttp_req, post_data);
             ret_errno = ERRNO_ILLEGAL_CMDNO;
             failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
@@ -254,7 +257,7 @@ void http_handler(struct evhttp_request *evhttp_req, void *arg) {
 
     event_gettime(&end_time);
     float cost = ((end_time.tv_sec-start_time.tv_sec)*1000+(end_time.tv_usec-start_time.tv_usec)/1000.0);
-    log_notice("errno: %d, cmdno: %d, cost: %.3f, len: %d", ret_errno, command_no, cost, post_len);
+    log_notice("errno: %d, cmdno: %d, cost: %.3f, len: %d", ret_errno, command_no, cost, r->readbuf_len);
 
     return;
 }

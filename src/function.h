@@ -9,7 +9,10 @@
 #ifndef  __FUNCTION_H_
 #define  __FUNCTION_H_
 
-int search(struct evhttp_request *req, struct evbuffer *response_buffer, int post_len, const char *post_data);
+#include "ndsim_define.h"
+
+//int search(struct evhttp_request *req, struct evbuffer *response_buffer, int post_len, const char *post_data);
+int search(req_t * r);
 int search2(struct evhttp_request *req, struct evbuffer *response_buffer, int post_len, const char *post_data);
 
 
