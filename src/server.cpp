@@ -30,6 +30,7 @@
 
 extern comcfg::Configure *conf;
 static int port;
+static int timeout_s;
 
 //for multiple thread
 int thread_num;
@@ -45,10 +46,18 @@ int read_conf() {
             thread_num = THREAD_NUM_DEFAULT;
         }
         log_trace("thread_num conf load done, thread_num: %u", thread_num);
+
+        timeout_s = conf[0]["Server"]["Timeout_s"].to_int32();
+        if (timeout_s <= 0) {
+            timeout_s = TIMEOUT_S_DEFAULT;
+        }
     } catch (comcfg::ConfigException &e) {
         log_fatal("Read conf error during server init, errmsg: %s", e.what());
         return -1;
     }
+
+
+
     return 0;
 }
 
@@ -76,8 +85,8 @@ void server_destroy() {
 }
 
 int server_run() {
-    struct event_base * base = event_base_new();
-    struct evhttp * http_server = evhttp_new(base);
+    struct event_base * server_base = event_base_new();
+    struct evhttp * http_server = evhttp_new(server_base);
     if(!http_server)
     {
         return -1;
@@ -93,11 +102,11 @@ int server_run() {
     //of no use, would not halt request, but only have empty reply after timeout
     //evhttp_set_timeout(http_server, 3);
 
-    evhttp_set_gencb(http_server, http_handler, base);
+    evhttp_set_gencb(http_server, http_handler, server_base);
 
     log_trace("http server start OK!");
 
-    event_base_dispatch(base);
+    event_base_dispatch(server_base);
 
     evhttp_free(http_server);
 
@@ -148,6 +157,45 @@ void timeout_handler(void* arg) {
     req_t *r = (req_t*)arg;
     r->timeout = true;
     printf("!!! in timeout_handler !!!\n");
+
+    //write response message
+    evbuffer_add_printf(r->writebuf, "Server Responsed Timeout. Requested: %s\n", evhttp_request_get_uri(r->evhttp_req));
+
+    //send response
+    evhttp_send_reply(r->evhttp_req, HTTP_OK, "Timeout", r->writebuf);
+
+    event_base_loopexit(r->req_base, 0);
+    event_base_free(r->req_base);  
+
+    return;
+}
+
+req_t * req_new() {
+    req_t *r = (req_t*)malloc(sizeof(req_t));
+    r->readbuf = post_data;
+    struct event_base* rbase = event_base_new();  
+    r->req_base = rbase;
+    r->timeout_event = event_timer_new(timeout_handler, timeout_s * 1000000, false, r, r->req_base);
+    //r->timeout_event = event_timer_new(req_timeout, timeout.tv_sec * 1000000 + timeout.tv_usec, false, r);
+
+    r->readbuf_len  = 0;
+    r->err_no       = 0;
+    r->command_no   = 0;
+
+    //memory init
+    //build response_buffer
+    r->writebuf = evbuffer_new();
+    if(!r->writebuf) {
+        log_fatal("failed to create response buffer \n");
+        exit(-1);
+    }
+
+    return r;
+}
+
+void req_free(req_t * r) {
+    //free response buffer
+    evbuffer_free(r->writebuf);
     return;
 }
 
@@ -156,27 +204,8 @@ void http_handler(struct evhttp_request *evhttp_req, void *arg) {
     struct timeval start_time, end_time;
     event_gettime(&start_time);
 
-    req_t *r = (req_t*)malloc(sizeof(req_t));
-    r->readbuf = post_data;
-    struct event_base* rbase = event_base_new();  
-    r->base = rbase;
+    req_t * r = req_new();
     r->evhttp_req = evhttp_req;
-    r->timeout_event = event_timer_new(timeout_handler, 1 * 10000, false, r, r->base);
-    //r->timeout_event = event_timer_new(req_timeout, timeout.tv_sec * 1000000 + timeout.tv_usec, false, r);
-
-
-    r->readbuf_len  = 0;
-    int ret_errno   = 0;
-    int command_no  = 0;
-
-    //memory init
-    //build response_buffer
-    struct evbuffer *response_buffer = evbuffer_new();
-    if(!response_buffer) {
-        log_fatal("failed to create response buffer \n");
-        exit(-1);
-    }
-    r->writebuf = response_buffer;
 
     //post_data init, ready to parse and store post data
     //seems do not necessary to memset
@@ -195,52 +224,52 @@ void http_handler(struct evhttp_request *evhttp_req, void *arg) {
     //get cmdno from request
     const char *cmdno = evhttp_find_header(get_params, "cmdno");
     if (cmdno == 0 || *cmdno == '\0') {
-        command_no = 0;
+        r->command_no = 0;
     }
     else {
-        command_no = atoi(cmdno);
+        r->command_no = atoi(cmdno);
     }
 
     //command distribution
-    switch(command_no) {
+    switch(r->command_no) {
         case CMDNO_SEARCH:
             r->readbuf_len = get_post_data(evhttp_req, post_data);
-            ret_errno = search(r);
+            r->err_no = search(r);
             break;
         case CMDNO_SAMPLE_AND_SIGN:
             r->readbuf_len = get_post_data(evhttp_req, post_data);
-            ret_errno = search2(evhttp_req, response_buffer, r->readbuf_len, (const char*)post_data);
+            r->err_no = search2(evhttp_req, r->writebuf, r->readbuf_len, (const char*)post_data);
             break;
         case CMDNO_GET_DOCS_BY_SIGN:
-            ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
+            r->err_no = ERRNO_ILLEGAL_CMDNO;
+            failure_process(evhttp_req, r->writebuf, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_GET_SIGNS_BY_DOC:
-            ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
+            r->err_no = ERRNO_ILLEGAL_CMDNO;
+            failure_process(evhttp_req, r->writebuf, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_GET_DOCS_BY_DOC:
-            ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
+            r->err_no = ERRNO_ILLEGAL_CMDNO;
+            failure_process(evhttp_req, r->writebuf, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_WORDSEG:
             r->readbuf_len = get_post_data(evhttp_req, post_data);
-            ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
+            r->err_no = ERRNO_ILLEGAL_CMDNO;
+            failure_process(evhttp_req, r->writebuf, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_CLASS:
             r->readbuf_len = get_post_data(evhttp_req, post_data);
-            ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
+            r->err_no = ERRNO_ILLEGAL_CMDNO;
+            failure_process(evhttp_req, r->writebuf, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         default:
-            ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(evhttp_req, response_buffer, ERRNO_ILLEGAL_CMDNO, "illegal cmdno", HTTP_BADREQUEST);
+            r->err_no = ERRNO_ILLEGAL_CMDNO;
+            failure_process(evhttp_req, r->writebuf, ERRNO_ILLEGAL_CMDNO, "illegal cmdno", HTTP_BADREQUEST);
             break;
     }
 
@@ -252,12 +281,12 @@ void http_handler(struct evhttp_request *evhttp_req, void *arg) {
     evhttp_send_reply(req, HTTP_OK, "OK", response_buffer);
     */
 
-    //free response buffer
-    evbuffer_free(response_buffer);
+    req_free(r);
+
 
     event_gettime(&end_time);
     float cost = ((end_time.tv_sec-start_time.tv_sec)*1000+(end_time.tv_usec-start_time.tv_usec)/1000.0);
-    log_notice("errno: %d, cmdno: %d, cost: %.3f, len: %d", ret_errno, command_no, cost, r->readbuf_len);
+    log_notice("errno: %d, cmdno: %d, cost: %.3f, len: %d", r->err_no, r->command_no, cost, r->readbuf_len);
 
     return;
 }
