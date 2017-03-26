@@ -23,6 +23,7 @@
 
 #include "ndsim_define.h"
 #include "server.h"
+#include "event.h"
 #include "log.h"
 #include "http_client.h"
 #include "function.h"
@@ -92,7 +93,7 @@ int server_run() {
     //of no use, would not halt request, but only have empty reply after timeout
     //evhttp_set_timeout(http_server, 3);
 
-    evhttp_set_gencb(http_server, http_handler, NULL);
+    evhttp_set_gencb(http_server, http_handler, base);
 
     log_trace("http server start OK!");
 
@@ -143,12 +144,24 @@ void connection_handler(struct evhttp_connection *evcon, void *arg) {
     return;
 }
 
+void timeout_handler(void* arg) {
+    req_t *r = (req_t*)arg;
+    r->timeout = true;
+    printf("!!! in timeout_handler !!!\n");
+    return;
+}
+
 void http_handler(struct evhttp_request *evhttp_req, void *arg) {
     log_debug("in http_handler");
+    struct event_base * base = (struct event_base *)arg;
     struct timeval start_time, end_time;
     event_gettime(&start_time);
 
-    req_t *req = (req_t*)malloc(sizeof(req_t));
+    req_t *r = (req_t*)malloc(sizeof(req_t));
+    r->evhttp_req = evhttp_req;
+    r->timeout_event = event_timer_new(timeout_handler, 1 * 10000, false, r, base);
+    //r->timeout_event = event_timer_new(req_timeout, timeout.tv_sec * 1000000 + timeout.tv_usec, false, r);
+
 
     int ret_errno   = 0;
     int post_len    = 0;
