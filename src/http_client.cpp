@@ -64,7 +64,6 @@ void http_request_get_cb(struct evhttp_request *req, void *arg)
 {
     struct http_request_get *http_req_get = (struct http_request_get *)arg;
     log_debug("http_request_get_cb, id: %d, status: %d", http_req_get->id, req->response_code);
-    sleep(3);
     switch(req->response_code)
     {
         case HTTP_OK:
@@ -117,7 +116,7 @@ int start_url_request(struct http_request_get *http_req, int req_get_flag)
         (port == -1 ? 80 : port));
 
     //3. set evhttp_connection timeout
-    evhttp_connection_set_timeout(http_req->cn, 5);
+    evhttp_connection_set_timeout(http_req->cn, 6);
 
     /**
      * Request will be released by evhttp connection
@@ -158,6 +157,9 @@ int start_url_request(struct http_request_get *http_req, int req_get_flag)
     /** Set the header properties */
     evhttp_add_header(http_req->req->output_headers, 
             "Host", evhttp_uri_get_host(http_req->uri));
+
+
+    debug_evhttp_connection(http_req->cn, 1); 
 
     return 0;
 }

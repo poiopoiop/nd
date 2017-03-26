@@ -77,11 +77,9 @@ int search2(struct evhttp_request *req, struct evbuffer *response_buffer, int po
         NULL, NULL, 1);  
      
     event_base_dispatch(base);  
-      
+
     http_request_free(http_req_get1, REQUEST_GET_FLAG);  
     event_base_free(base);  
-
-    sleep(5);
 
     //write response message
     evbuffer_add_printf(response_buffer, "Server process done, function: search2, errno: %d, errmsg:%s\n", ERRNO_SUCCESS, "success");

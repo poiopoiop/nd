@@ -16,6 +16,22 @@
 #include "event2/buffer.h"
 #include "event2/http.h"
 
+#include "ndsim_define.h"
+
+typedef struct _req_t {
+    unsigned int log_id; //mirror from conn
+    char *writebuf;
+    event_timer_t *timeout_event;
+    bool timeout;
+    unsigned long req_id;
+    struct timeval start_time;
+    int err_no;
+    char err_msg[MAX_ERR_MSG_LEN];
+
+    struct evhttp_request *evhttp_req;
+} req_t;
+
+
 int read_conf();
 
 int server_init();

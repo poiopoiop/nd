@@ -14,10 +14,10 @@
 
 #include <event2/event.h>
 #include <event2/buffer.h>
+#include <event2/bufferevent.h>
 #include <event2/http.h>
 #include <event2/http_struct.h>
 #include <event2/keyvalq_struct.h>
-
 
 #include <Configure.h>
 
@@ -143,10 +143,12 @@ void connection_handler(struct evhttp_connection *evcon, void *arg) {
     return;
 }
 
-void http_handler(struct evhttp_request *req, void *arg) {
+void http_handler(struct evhttp_request *evhttp_req, void *arg) {
     log_debug("in http_handler");
     struct timeval start_time, end_time;
     event_gettime(&start_time);
+
+    req_t *req = (req_t*)malloc(sizeof(req_t));
 
     int ret_errno   = 0;
     int post_len    = 0;
@@ -164,14 +166,16 @@ void http_handler(struct evhttp_request *req, void *arg) {
     //seems do not necessary to memset
     //memset(post_data, '\0', MAX_POST_DATA_SIZE + 1);
 
-    //set timeout
-    evhttp_connection_set_timeout(req->evcon, 3);
-    evhttp_connection_set_closecb(req->evcon, connection_handler, NULL);
+    //set timeout, of no use...
+    //evhttp_connection_set_timeout2(req->evcon, 3);
+    //evhttp_connection_set_closecb(req->evcon, connection_handler, NULL);
+
+    debug_evhttp_connection(evhttp_req->evcon, 0);
 
     //parse get parameters 
     struct evkeyvalq * get_params;
-    get_params = evhttp_request_get_input_headers(req);
-    evhttp_parse_query(evhttp_request_get_uri(req), get_params);
+    get_params = evhttp_request_get_input_headers(evhttp_req);
+    evhttp_parse_query(evhttp_request_get_uri(evhttp_req), get_params);
     //get cmdno from request
     const char *cmdno = evhttp_find_header(get_params, "cmdno");
     if (cmdno == 0 || *cmdno == '\0') {
@@ -184,43 +188,43 @@ void http_handler(struct evhttp_request *req, void *arg) {
     //command distribution
     switch(command_no) {
         case CMDNO_SEARCH:
-            post_len = get_post_data(req, post_data);
-            ret_errno = search(req, response_buffer, post_len, (const char*)post_data);
+            post_len = get_post_data(evhttp_req, post_data);
+            ret_errno = search(evhttp_req, response_buffer, post_len, (const char*)post_data);
             break;
         case CMDNO_SAMPLE_AND_SIGN:
-            post_len = get_post_data(req, post_data);
-            ret_errno = search2(req, response_buffer, post_len, (const char*)post_data);
+            post_len = get_post_data(evhttp_req, post_data);
+            ret_errno = search2(evhttp_req, response_buffer, post_len, (const char*)post_data);
             break;
         case CMDNO_GET_DOCS_BY_SIGN:
             ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
+            failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_GET_SIGNS_BY_DOC:
             ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
+            failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_GET_DOCS_BY_DOC:
             ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
+            failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_WORDSEG:
-            post_len = get_post_data(req, post_data);
+            post_len = get_post_data(evhttp_req, post_data);
             ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
+            failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         case CMDNO_CLASS:
-            post_len = get_post_data(req, post_data);
+            post_len = get_post_data(evhttp_req, post_data);
             ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
+            failure_process(evhttp_req, response_buffer, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND);
             break;
         default:
             ret_errno = ERRNO_ILLEGAL_CMDNO;
-            failure_process(req, response_buffer, ERRNO_ILLEGAL_CMDNO, "illegal cmdno", HTTP_BADREQUEST);
+            failure_process(evhttp_req, response_buffer, ERRNO_ILLEGAL_CMDNO, "illegal cmdno", HTTP_BADREQUEST);
             break;
     }
 

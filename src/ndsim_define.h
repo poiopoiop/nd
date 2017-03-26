@@ -26,6 +26,7 @@
 //for request
 //max input post data size if 16M, for pure txt
 #define MAX_POST_DATA_SIZE          16000000
+#define MAX_ERR_MSG_LEN             128
 
 
 //for command/interface
