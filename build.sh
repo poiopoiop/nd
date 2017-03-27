@@ -43,6 +43,12 @@ g++ -g -Wall \
     -I ../bd_libs/lib2-64/bsl/include/ \
     -I ../bd_libs/lib2-64/ullib/include/ \
     -I ../libevent/output/include/ \
+    -c ./src/req.cpp -o ./src/req.o 
+g++ -g -Wall \
+    -I ../bd_libs/public/configure/output/include/ \
+    -I ../bd_libs/lib2-64/bsl/include/ \
+    -I ../bd_libs/lib2-64/ullib/include/ \
+    -I ../libevent/output/include/ \
     -c ./src/main.cpp -o ./src/main.o 
 #g++ -g -Wall \
 #    -I ../bd_libs/public/configure/output/include/ \
@@ -62,6 +68,7 @@ g++ -g -Wall \
     ./src/http_client.o \
     ./src/function.o \
     ./src/file.o \
+    ./src/req.o \
     ./src/main.o \
     -Xlinker "-(" \
     ../libevent/output/lib/libevent.a \

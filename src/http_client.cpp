@@ -158,9 +158,6 @@ int start_url_request(struct http_request_get *http_req, int req_get_flag)
     evhttp_add_header(http_req->req->output_headers, 
             "Host", evhttp_uri_get_host(http_req->uri));
 
-
-    debug_evhttp_connection(http_req->cn, 1); 
-
     return 0;
 }
 

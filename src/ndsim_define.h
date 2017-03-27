@@ -62,7 +62,6 @@ typedef struct _req_t {
     //char *writebuf;
     struct evbuffer * writebuf;
 
-
     event_timer_t *timeout_event;
     bool timeout;
     unsigned long req_id;
