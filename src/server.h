@@ -25,9 +25,6 @@ int server_init();
 void server_destroy();
 int server_run();
 
-int get_post_data(struct evhttp_request *req, char* post_data);
-
-
 #endif  //__SERVER_H_
 
 /* vim: set expandtab ts=4 sw=4 sts=4 tw=100: */

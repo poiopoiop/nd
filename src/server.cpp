@@ -35,8 +35,6 @@ static int port;
 //for multiple thread
 int thread_num;
 
-//global variable
-char *post_data;
 
 int read_conf() {
     try {
@@ -56,8 +54,6 @@ int read_conf() {
         return -1;
     }
 
-
-
     return 0;
 }
 
@@ -67,20 +63,11 @@ int server_init() {
         return -1;
     }
 
-    //post_data init, ready to parse and store post data
-    post_data = (char *) malloc(MAX_POST_DATA_SIZE + 1);
-    if (!post_data) {
-        log_fatal("failed to create post_data buffer \n");
-        exit(-1);
-    }
-
     server_run();
     return 0;
 }
 
 void server_destroy() {
-    //free post_data
-    free(post_data);
     return;
 }
 
@@ -111,28 +98,6 @@ int server_run() {
     evhttp_free(http_server);
 
     return 0;
-}
-
-int get_post_data(struct evhttp_request *req, char* post_data) {
-    //input_buffer, get POST info
-    evbuffer * input_buffer = evhttp_request_get_input_buffer(req);
-
-    //length of post data
-    int len = evbuffer_get_length(input_buffer);
-    if (len <= 0) {
-        log_warning("post data empty");
-        log_notice("errno: %d", ERRNO_POST_DATA_EMPTY);
-        return ERRNO_POST_DATA_EMPTY;
-    }
-    else if (len > MAX_POST_DATA_SIZE) {
-        log_warning("post data too large: %u > %u", len, MAX_POST_DATA_SIZE);
-        log_notice("errno: %d", ERRNO_POST_DATA_TOO_LARGE);
-        return ERRNO_POST_DATA_TOO_LARGE;
-    }
-
-    memcpy(post_data, evbuffer_pullup(input_buffer, -1), len);
-
-    return len;
 }
 
 void connection_handler(struct evhttp_connection *evcon, void *arg) {

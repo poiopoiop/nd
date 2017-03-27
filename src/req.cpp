@@ -24,8 +24,21 @@
 #include "http_client.h"
 #include "function.h"
 
-extern char* post_data;
 extern int timeout_s;
+
+//global variable
+char *post_data;
+
+int req_init() {
+    //post_data init, ready to parse and store post data
+    post_data = (char *) malloc(MAX_POST_DATA_SIZE + 1);
+    if (!post_data) {
+        log_fatal("failed to create post_data buffer \n");
+        return -1;
+    }
+
+    return 0;
+}
 
 req_t * req_new() {
     req_t *r = (req_t*)malloc(sizeof(req_t));
@@ -56,6 +69,28 @@ void req_free(req_t * r) {
     return;
 }
 
+int get_post_data(struct evhttp_request *req, char* post_data) {
+    //input_buffer, get POST info
+    evbuffer * input_buffer = evhttp_request_get_input_buffer(req);
+
+    //length of post data
+    int len = evbuffer_get_length(input_buffer);
+    if (len <= 0) {
+        log_warning("post data empty");
+        log_notice("errno: %d", ERRNO_POST_DATA_EMPTY);
+        return ERRNO_POST_DATA_EMPTY;
+    }
+    else if (len > MAX_POST_DATA_SIZE) {
+        log_warning("post data too large: %u > %u", len, MAX_POST_DATA_SIZE);
+        log_notice("errno: %d", ERRNO_POST_DATA_TOO_LARGE);
+        return ERRNO_POST_DATA_TOO_LARGE;
+    }
+
+    memcpy(post_data, evbuffer_pullup(input_buffer, -1), len);
+
+    return len;
+}
+
 void timeout_handler(void* arg) {
     req_t *r = (req_t*)arg;
     r->timeout = true;
@@ -65,7 +100,7 @@ void timeout_handler(void* arg) {
     evbuffer_add_printf(r->writebuf, "Server Responsed Timeout. Requested: %s\n", evhttp_request_get_uri(r->evhttp_req));
 
     //send response
-    evhttp_send_reply(r->evhttp_req, HTTP_OK, "Timeout", r->writebuf);
+    evhttp_send_reply(r->evhttp_req, 504, "Timeout", r->writebuf);
 
     event_base_loopexit(r->req_base, 0);
     //event_base_free(r->req_base);  

@@ -10,7 +10,7 @@
 #include <signal.h>
 
 #include "file.h"
-#include "event.h"
+#include "req.h"
 #include "server.h"
 #include "log.h"
 
@@ -64,10 +64,13 @@ int main(int argc, char **argv) {
     }
     log_trace("log init done");
 
-    ENSURE(event_init(), "event init failed");
-    log_trace("event init done");
+    //ENSURE(event_init(), "event init failed");
+    //log_trace("event init done");
 
-    ENSURE(server_init(), "event init failed");
+    ENSURE(req_init(), "request module init failed");
+    log_trace("request module init done");
+ 
+    ENSURE(server_init(), "server init failed");
     log_trace("server init done");
  
 

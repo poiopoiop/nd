@@ -18,12 +18,16 @@
 
 #include "ndsim_define.h"
 
+int req_init();
+
 //process request timeout
-void timeout_handler(void* arg);
 req_t * req_new();
 void req_free(req_t * r);
 
+int get_post_data(struct evhttp_request *req, char* post_data);
+
 void http_handler(struct evhttp_request *req, void *arg);
+void timeout_handler(void* arg);
 void failure_process(struct evhttp_request *req, struct evbuffer *response_buffer, int ret_errno, const char* ret_errmsg, int ret_status, int cmdno);
 
 #endif  //__REQ_H_
