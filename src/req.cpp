@@ -174,6 +174,9 @@ void http_handler(struct evhttp_request *evhttp_req, void *arg) {
             failure_process(evhttp_req, r->writebuf, ERRNO_NOT_SUPPORT_CMDNO, 
                     "cmdno not support", HTTP_NOTFOUND, CMDNO_CLASS);
             break;
+        case CMDNO_TEST_BACKEND:
+            r->err_no = test_backend(r);
+            break;
         default:
             r->err_no = ERRNO_ILLEGAL_CMDNO;
             failure_process(evhttp_req, r->writebuf, ERRNO_ILLEGAL_CMDNO, "illegal cmdno", HTTP_BADREQUEST, ERRNO_ILLEGAL_CMDNO);

@@ -46,6 +46,7 @@
 #define CMDNO_GET_DOCS_BY_DOC       5
 #define CMDNO_WORDSEG               6
 #define CMDNO_CLASS                 7
+#define CMDNO_TEST_BACKEND          12
 
 typedef struct _client_base_t {
     struct event_base * client_base;

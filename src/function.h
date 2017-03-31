@@ -15,6 +15,7 @@
 int search(req_t * r);
 int search2(struct evhttp_request *req, struct evbuffer *response_buffer, int post_len, const char *post_data);
 
+int test_backend(req_t * r);
 
 
 

@@ -92,3 +92,30 @@ int search2(struct evhttp_request *req, struct evbuffer *response_buffer, int po
 
     return 0;
 }
+
+int test_backend(req_t * r) {
+    struct event_base* req_base = r->req_base;
+
+    struct http_request_get *http_req_get1 = 
+        (struct http_request_get*)start_http_request(req_base,  
+        "http://www.google.com/",  
+        REQUEST_GET_FLAG,  
+        NULL, NULL, 1);  
+     
+    event_base_dispatch(req_base);  
+      
+    http_request_free(http_req_get1, REQUEST_GET_FLAG);  
+    event_base_free(req_base);  
+
+    //write response message
+    evbuffer_add_printf(r->writebuf, "Server process done, function: test_backend, errno: %d, errmsg:%s\n", ERRNO_SUCCESS, "success");
+
+    //send response
+    evhttp_send_reply(r->evhttp_req, HTTP_OK, "success", r->writebuf);
+
+    log_debug("evhttp_send_reply, %d, %d", r->evhttp_req, r->writebuf);
+
+    return 0;
+}
+
+
